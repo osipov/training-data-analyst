@@ -44,10 +44,15 @@ def cnn_model(img, mode, hparams):
   c1 = tf.layers.conv2d(img, filters=nfil1,
                           kernel_size=ksize1, strides=1, # ?x28x28x10
                           padding='same', activation=tf.nn.relu)
+
   p1 = tf.layers.max_pooling2d(c1,pool_size=2, strides=2) # ?x14x14x10
 
   #TODO: apply a second convolution to the output of p1
+  c2 = tf.layers.conv2d(p1, filters = nfil2, kernel_size = ksize2, strides = 1,
+                        padding = 'same', activation = tf.nn.relu)
+  
   #TODO: apply a pooling layer with pool_size=2 and strides=2
+  p2 = tf.layers.max_pooling2d(c2, pool_size = 2, strides = 2)
   
   outlen = p2.shape[1]*p2.shape[2]*p2.shape[3] #outlen should be 980
   p2flat = tf.reshape(p2, [-1, outlen]) # flattened
@@ -78,9 +83,19 @@ def cnn_batch_norm_model(img, mode, hparams):
   outlen = p2.shape[1]*p2.shape[2]*p2.shape[3] #outlen should be 980
   p2flat = tf.reshape(p2, [-1, outlen]) # flattened
   
-  #TODO: create a dense layer and apply batch normalization, ensuring that activation is done once, after batch norming
+  #TODO: create a dense layer and apply batch normalization, 
+  #ensuring that activation is done once, after batch norming
+  h3 = tf.layers.dense(p2flat, 300, activation=None)
+
+  h3 = tf.layers.batch_normalization(h3, 
+             training=(mode == tf.estimator.ModeKeys.TRAIN))
+
+  h3 = tf.nn.relu(h3)
 
   #TODO: apply dropout to the batch normed dense layer
+  h3_with_dropout = tf.layers.dropout(h3, rate=0.1,  training=(mode == tf.estimator.ModeKeys.TRAIN))
+
+  ylogits = tf.layers.dense(h3_with_dropout, NCLASSES, activation=None)
 
   return ylogits, NCLASSES
 
